@@ -1,0 +1,34 @@
+.PHONY: all upload clean
+
+PROGRAM_NAME := bpithermo
+SOURCE_DIR := src
+BUILD_DIR := build
+PROGRAMMER_PORT := /dev/ttyACM0
+CC := avr-gcc
+OBJCOPY_PROG := avr-objcopy
+
+OBJECTS := $(BUILD_DIR)/main.o
+
+all: $(BUILD_DIR)/$(PROGRAM_NAME).bin
+
+$(BUILD_DIR):
+	mkdir -pv $(BUILD_DIR)
+
+# Compile C code files.
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c | $(BUILD_DIR)
+	$(CC) -mmcu=attiny48 -Wall -Wextra -Werror -nostdlib -Os -c $< -o $@
+
+# Link C code files into an ELF.
+$(BUILD_DIR)/$(PROGRAM_NAME).elf: $(OBJECTS)
+	$(CC) $^ -nostdlib -o $(BUILD_DIR)/$(PROGRAM_NAME).elf
+
+# Extract raw flash data from ELF.
+$(BUILD_DIR)/$(PROGRAM_NAME).bin: $(BUILD_DIR)/$(PROGRAM_NAME).elf
+	$(OBJCOPY_PROG) -j .text -j .data -O binary $(BUILD_DIR)/$(PROGRAM_NAME).elf $(BUILD_DIR)/$(PROGRAM_NAME).bin
+
+# Upload raw flash data.
+upload: $(BUILD_DIR)/$(PROGRAM_NAME).bin
+	avrdude -c arduino -p attiny48 -P $(PROGRAMMER_PORT) -b 19200 -U flash:w:$(BUILD_DIR)/$(PROGRAM_NAME).bin
+
+clean:
+	rm -r $(BUILD_DIR)
