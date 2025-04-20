@@ -7,7 +7,7 @@ PROGRAMMER_PORT := /dev/ttyACM0
 CC := avr-gcc
 OBJCOPY_PROG := avr-objcopy
 
-OBJECTS := $(BUILD_DIR)/main.o
+OBJECTS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o
 
 all: $(BUILD_DIR)/$(PROGRAM_NAME).bin
 
@@ -16,7 +16,11 @@ $(BUILD_DIR):
 
 # Compile C code files.
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c | $(BUILD_DIR)
-	$(CC) -mmcu=attiny48 -Wall -Wextra -Werror -nostdlib -Os -c $< -o $@
+	$(CC) -mmcu=attiny48 -Wall -Wextra -nostdlib -Os -c $< -o $@
+
+# Compile ASM code files.
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.asm | $(BUILD_DIR)
+	$(CC) -mmcu=attiny48 -x assembler -Wall -Wextra -Os -c $< -o $@
 
 # Link C code files into an ELF.
 $(BUILD_DIR)/$(PROGRAM_NAME).elf: $(OBJECTS)
