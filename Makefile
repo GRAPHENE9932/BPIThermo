@@ -7,7 +7,7 @@ PROGRAMMER_PORT := /dev/ttyACM0
 CC := avr-gcc
 OBJCOPY_PROG := avr-objcopy
 
-OBJECTS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o
+OBJECTS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/fixed16.o $(BUILD_DIR)/hdc2080.o
 
 all: $(BUILD_DIR)/$(PROGRAM_NAME).bin
 
@@ -16,7 +16,7 @@ $(BUILD_DIR):
 
 # Compile C code files.
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c | $(BUILD_DIR)
-	$(CC) -mmcu=attiny48 -Wall -Wextra -nostdlib -Os -c $< -o $@
+	$(CC) -mmcu=attiny48 -Wall -Wextra -Os -c $< -o $@
 
 # Compile ASM code files.
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.asm | $(BUILD_DIR)
@@ -24,7 +24,7 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.asm | $(BUILD_DIR)
 
 # Link C code files into an ELF.
 $(BUILD_DIR)/$(PROGRAM_NAME).elf: $(OBJECTS)
-	$(CC) $^ -nostdlib -o $(BUILD_DIR)/$(PROGRAM_NAME).elf
+	$(CC) $^ -o $(BUILD_DIR)/$(PROGRAM_NAME).elf
 
 # Extract raw flash data from ELF.
 $(BUILD_DIR)/$(PROGRAM_NAME).bin: $(BUILD_DIR)/$(PROGRAM_NAME).elf
