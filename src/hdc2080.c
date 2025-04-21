@@ -136,7 +136,7 @@ static fixed16 convert_raw_to_celsius(ufixed16 raw) {
     // According to the datasheet, TEMP_PSRR = 0.08 C/V and the input voltage of the HDC2080, in
     // case with BPIThermo Revision A, is 3.0V.
     // Substituting and simplifying, we get:
-    // Temperature (C) (TEMPERATURE[15:0] / 2^8) * (165 / 2^8) - 40.596.
+    // Temperature (C) = (TEMPERATURE[15:0] / 2^8) * (165 / 2^8) - 40.596.
 
     // We must use unsigned values here, as the raw temperature can range from 0.0 to about 255.99609375,
     // which exceeds the fixed16 range.
