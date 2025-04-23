@@ -66,12 +66,6 @@ void leds_init(void) {
     // We just set the CLR bit to 0 to reset it. Now wait half a cycle and return it to the normal state: 1.
     _delay_us(HALF_CYCLE_US);
     PORT_RCK_CLR_G |= (1 << BIT_CLR);
-
-    send_byte_to_shift_register(0b00000000);
-
-    for (uint8_t i = 0; i < 6; i++) {
-        leds[i] = 0;
-    }
 }
 
 void leds_flash_once(void) {
