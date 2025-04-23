@@ -8,6 +8,10 @@
 
 #define HDC2080_I2C_ADDRESS_W 0b10000000
 #define HDC2080_I2C_ADDRESS_R 0b10000001
+#define PORT_DRDY PORTC
+#define PIN_DRDY PINC
+#define DDR_DRDY DDRC
+#define BIT_DRDY 3
 
 static void debug_error(void) {
     while (1) {
@@ -124,7 +128,20 @@ static void i2c_mr_stop(void) {
 }
 
 void hdc2080_init(void) {
+    DDR_DRDY &= ~(1 << BIT_DRDY); // Set up the pin connected to DRDY of HDC2080 as input without pullup.
+    PORT_DRDY &= ~(1 << BIT_DRDY);
+
     i2c_init();
+
+    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
+    i2c_mt(0x0E); // Select the Reset and DRDY/INT Configuration Register.
+    i2c_mt(0b00000110); // Enable the DRDY/INT pin and set interrupt polarity to Active High.
+    i2c_mt_stop();
+
+    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
+    i2c_mt(0x07); // Select the Interrupt Configuration register.
+    i2c_mt(0b10000000); // Enable the DataReady interrupt.
+    i2c_mt_stop();
 }
 
 #define UFIXED16_165_BY_256 ((ufixed16)165) // Exactly 165/256, or 0.64453125.
@@ -151,7 +168,7 @@ fixed16 hdc2080_measure_temperature_sync(void) {
     i2c_mt(0b00000001);
     i2c_mt_stop();
 
-    _delay_ms(7);
+    while (!(PIN_DRDY & (1 << BIT_DRDY))); // Wait until the DRDY pin is high.
 
     i2c_mt_start(HDC2080_I2C_ADDRESS_W);
     i2c_mt(0x00); // Select the TEMPERATURE LOW register.
