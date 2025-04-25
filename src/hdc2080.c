@@ -173,15 +173,28 @@ static fixed16 convert_raw_to_celsius(ufixed16 raw) {
     return ufixed16_mul(raw, UFIXED16_165_BY_256) - UFIXED16_40_596;
 }
 
-fixed16 hdc2080_get_temperature_celsius(void) {
+static uint8_t convert_raw_to_rh_percentage(uint16_t raw) {
+    // Formula from the datasheet is:
+    // Humidity (%RH) = (HUMIDITY[15:0] / 2^16) * 100.
+    return (((uint32_t)raw + 328) * 100) >> 16;
+}
+
+struct hdc2080_data hdc2080_acquire_data(void) {
     i2c_mt_start(HDC2080_I2C_ADDRESS_W);
     i2c_mt(0x00); // Select the TEMPERATURE LOW register.
     i2c_mt_stop();
 
     i2c_mr_start(HDC2080_I2C_ADDRESS_R);
     uint8_t temp_low = i2c_mr(false); // Read out TEMPERATURE LOW.
-    uint8_t temp_high = i2c_mr(true); // Read out TEMPERATURE HIGH.
+    uint8_t temp_high = i2c_mr(false); // Read out TEMPERATURE HIGH.
+    uint8_t humi_low = i2c_mr(false); // Read out HUMIDITY LOW.
+    uint8_t humi_high = i2c_mr(true); // Read out HUMIDITY HIGH.
     i2c_mr_stop();
 
-    return convert_raw_to_celsius((ufixed16)temp_high << 8 | temp_low);
+    struct hdc2080_data result = {
+        convert_raw_to_celsius((ufixed16)temp_high << 8 | temp_low),
+        convert_raw_to_rh_percentage((uint16_t)humi_high << 8 | humi_low)
+    };
+
+    return result;
 }

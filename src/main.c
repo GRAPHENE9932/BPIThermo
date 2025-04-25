@@ -22,6 +22,8 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 
 #define SEVEN_SEGMENT_MINUS 0b01000000
 #define SEVEN_SEGMENT_DP 0b10000000
+#define SEVEN_SEGMENT_H 0b01110110
+#define SEVEN_SEGMENT_I 0b00000110
 
 static void debug_shiftout(uint8_t byte) {
     bool cur_bit = byte & 0b10000000 ? true : false;
@@ -105,6 +107,19 @@ static void put_temperature_on_leds(fixed16 temperature) {
     }
 }
 
+static void put_humidity_on_leds(uint8_t humidity) {
+    // We only have two seven segment digits for our disposal.
+    // So, when humidity is 100, display "HI".
+    if (humidity >= 100) {
+        leds[1] = SEVEN_SEGMENT_H;
+        leds[0] = SEVEN_SEGMENT_I;
+        return;
+    }
+
+    leds[1] = SEVEN_SEGMENT_DIGITS[humidity / 10];
+    leds[0] = SEVEN_SEGMENT_DIGITS[humidity % 10];
+}
+
 int main(void) {
     clock_prescale_set(clock_div_1); // Disable the default /8 prescaler.
 
@@ -116,8 +131,9 @@ int main(void) {
     while (1) {
         leds_flash_once();
         if (hdc2080_is_measurement_over()) {
-            fixed16 temperature = hdc2080_get_temperature_celsius();
-            put_temperature_on_leds(temperature);
+            struct hdc2080_data data = hdc2080_acquire_data();
+            put_temperature_on_leds(data.temperature);
+            put_humidity_on_leds(data.humidity);
         }
     }
 
