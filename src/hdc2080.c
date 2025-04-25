@@ -134,17 +134,17 @@ void hdc2080_init(void) {
     i2c_init();
 
     i2c_mt_start(HDC2080_I2C_ADDRESS_W);
-    i2c_mt(0x0E); // Select the Reset and DRDY/INT Configuration Register.
-    i2c_mt(0b00000110); // Enable the DRDY/INT pin and set interrupt polarity to Active High.
-    i2c_mt_stop();
-
-    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
     i2c_mt(0x07); // Select the Interrupt Configuration register.
     i2c_mt(0b10000000); // Enable the DataReady interrupt.
     i2c_mt_stop();
-}
+    
+    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
+    i2c_mt(0x0E); // Select the Reset and DRDY/INT Configuration Register.
+    // Enable the DRDY/INT pin, set interrupt polarity to Active High and
+    // set the Auto Measurement Mode to 5 Hz.
+    i2c_mt(0b01110110);
+    i2c_mt_stop();
 
-void hdc2080_start_measurement(void) {
     i2c_mt_start(HDC2080_I2C_ADDRESS_W);
     i2c_mt(0x0F); // Select the MEASUREMENT CONFIGURATION register.
     // Set temperature resolution to "14 bit", humidity resolution to "14 bit",

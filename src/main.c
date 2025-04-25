@@ -112,14 +112,13 @@ int main(void) {
 
     leds_init();
     
-
     hdc2080_init();
     while (1) {
-        hdc2080_start_measurement();
-        while (!hdc2080_is_measurement_over());
-        fixed16 temperature = hdc2080_get_temperature_celsius();
-        put_temperature_on_leds(temperature);
         leds_flash_once();
+        if (hdc2080_is_measurement_over()) {
+            fixed16 temperature = hdc2080_get_temperature_celsius();
+            put_temperature_on_leds(temperature);
+        }
     }
 
     while (1) {
