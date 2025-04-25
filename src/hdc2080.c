@@ -144,6 +144,19 @@ void hdc2080_init(void) {
     i2c_mt_stop();
 }
 
+void hdc2080_start_measurement(void) {
+    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
+    i2c_mt(0x0F); // Select the MEASUREMENT CONFIGURATION register.
+    // Set temperature resolution to "14 bit", humidity resolution to "14 bit",
+    // measurement configuration to "Humidity + Temperature" and measurement trigger to "Start measurement".
+    i2c_mt(0b00000001);
+    i2c_mt_stop();
+}
+
+bool hdc2080_is_measurement_over(void) {
+    return PIN_DRDY & (1 << BIT_DRDY);
+}
+
 #define UFIXED16_165_BY_256 ((ufixed16)165) // Exactly 165/256, or 0.64453125.
 #define UFIXED16_40_596 0x2899 // Supposed to be 40.596, actually 40.59765625.
 
@@ -160,16 +173,7 @@ static fixed16 convert_raw_to_celsius(ufixed16 raw) {
     return ufixed16_mul(raw, UFIXED16_165_BY_256) - UFIXED16_40_596;
 }
 
-fixed16 hdc2080_measure_temperature_sync(void) {
-    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
-    i2c_mt(0x0F); // Select the MEASUREMENT CONFIGURATION register.
-    // Set temperature resolution to "14 bit", humidity resolution to "14 bit",
-    // measurement configuration to "Humidity + Temperature" and measurement trigger to "Start measurement".
-    i2c_mt(0b00000001);
-    i2c_mt_stop();
-
-    while (!(PIN_DRDY & (1 << BIT_DRDY))); // Wait until the DRDY pin is high.
-
+fixed16 hdc2080_get_temperature_celsius(void) {
     i2c_mt_start(HDC2080_I2C_ADDRESS_W);
     i2c_mt(0x00); // Select the TEMPERATURE LOW register.
     i2c_mt_stop();
