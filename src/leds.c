@@ -16,8 +16,8 @@
 #define BIT_G 5
 
 // Define the duration of a half of a clock cycle for shift register control in microseconds.
-// 10 us corresponds to 50 kHz.
-#define HALF_CYCLE_US 10
+// 5 us corresponds to 100 kHz.
+#define HALF_CYCLE_US 5
 
 uint8_t leds[6];
 
