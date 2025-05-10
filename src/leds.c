@@ -130,6 +130,8 @@ static void flash_for_us(fixed16 us) {
     }
 }
 
+#define FIXED16_LED_DUTY_US ((fixed16)LED_DUTY_US << 8)
+
 void leds_flash_once(fixed16 brightness) {
     for (uint8_t i = 0; i < 6; i++) {
         send_byte_to_shift_register(leds[i]);
@@ -176,6 +178,12 @@ void leds_flash_once(fixed16 brightness) {
         case 5:
             PORTA |= (1 << PA2);
             break;
+        }
+
+        // Now we do the dark portion of PWM.
+        uint8_t us_to_delay = (FIXED16_LED_DUTY_US - brightness) >> 8;
+        if (us_to_delay >= 2) {
+            variable_delay_for_us(us_to_delay);
         }
     }
 }
