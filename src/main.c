@@ -137,9 +137,4 @@ int main(void) {
             put_brightness_on_leds(cached_brightness);
         }
     }
-
-    while (1) {
-        PORTB ^= (1 << PB7);
-        _delay_ms(1000);
-    }
 }
