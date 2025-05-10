@@ -1,5 +1,6 @@
 #include "hdc2080.h"
 #include "leds.h"
+#include "brightness_control.h"
 
 #define F_CPU 8000000UL
 #include <avr/io.h>
@@ -126,14 +127,21 @@ int main(void) {
     DDRB |= (1 << PB7);
 
     leds_init();
-    
     hdc2080_init();
+    brightness_control_init();
+    fixed16 cached_brightness = brightness_control_get_percentage();
+
     while (1) {
-        leds_flash_once();
+        leds_flash_once(cached_brightness);
         if (hdc2080_is_measurement_over()) {
             struct hdc2080_data data = hdc2080_acquire_data();
             put_temperature_on_leds(data.temperature);
             put_humidity_on_leds(data.humidity);
+        }
+        
+        brightness_control_update();
+        if (brightness_control_changed()) {
+            cached_brightness = brightness_control_get_percentage();
         }
     }
 

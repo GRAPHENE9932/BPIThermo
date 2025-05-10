@@ -1,6 +1,8 @@
 #ifndef LEDS_H
 #define LEDS_H
 
+#include "fixed16.h"
+
 #include <stdint.h>
 
 // Buffer that stores the desired state of 7-segment display's LEDs.
@@ -14,6 +16,7 @@
 extern uint8_t leds[6];
 
 void leds_init(void);
-void leds_flash_once(void);
+// Brightness must be in range [1/256, 100.0].
+void leds_flash_once(fixed16 brightness);
 
 #endif // LEDS_H
