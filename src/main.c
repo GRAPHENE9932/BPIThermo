@@ -26,28 +26,6 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 #define SEVEN_SEGMENT_H 0b01110110
 #define SEVEN_SEGMENT_I 0b00000110
 
-static void debug_shiftout(uint8_t byte) {
-    bool cur_bit = byte & 0b10000000 ? true : false;
-    for (uint8_t i = 0; i < 8; i++) {
-        PORTB |= (1 << PB7);
-        _delay_ms(100);
-        PORTB &= ~(1 << PB7);
-        _delay_ms(100);
-
-        if (cur_bit) {
-            PORTB |= (1 << PB7);
-            _delay_ms(100);
-            PORTB &= ~(1 << PB7);
-            _delay_ms(100);
-        }
-
-        _delay_ms(1000);
-
-        byte <<= 1;
-        cur_bit = byte & 0b10000000 ? true : false;
-    }
-}
-
 static void put_temperature_on_leds(fixed16 temperature) {
     bool is_negative = false;
     if (temperature < 0) {
@@ -124,8 +102,6 @@ static void put_humidity_on_leds(uint8_t humidity) {
 int main(void) {
     clock_prescale_set(clock_div_1); // Disable the default /8 prescaler.
 
-    DDRB |= (1 << PB7);
-
     leds_init();
     hdc2080_init();
     brightness_control_init();
@@ -138,7 +114,7 @@ int main(void) {
             put_temperature_on_leds(data.temperature);
             put_humidity_on_leds(data.humidity);
         }
-        
+
         brightness_control_update();
         if (brightness_control_changed()) {
             cached_brightness = brightness_control_get_percentage();
