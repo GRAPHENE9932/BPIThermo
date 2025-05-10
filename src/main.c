@@ -40,7 +40,7 @@ static void put_number_on_red_leds(fixed16 number) {
     uint8_t integer_part = number >> 8;
 
     digits[4] = integer_part / 100;
-    digits[3] = integer_part / 10 - digits[4] * 100;
+    digits[3] = integer_part / 10 - digits[4] * 10;
     digits[2] = integer_part % 10;
 
     uint8_t fractional_part = number;
@@ -53,7 +53,7 @@ static void put_number_on_red_leds(fixed16 number) {
     if (is_negative) {
         leds[5] = SEVEN_SEGMENT_MINUS;
 
-        if (digits[3] == 0) {
+        if (digits[4] == 0 && digits[3] == 0) {
             leds[4] = SEVEN_SEGMENT_DIGITS[digits[2]] | SEVEN_SEGMENT_DP;
             leds[3] = SEVEN_SEGMENT_DIGITS[digits[1]];
             leds[2] = SEVEN_SEGMENT_DIGITS[digits[0]];
@@ -70,7 +70,7 @@ static void put_number_on_red_leds(fixed16 number) {
         }
     }
     else {
-        if (digits[3] == 0) {
+        if (digits[4] == 0 && digits[3] == 0) {
             leds[5] = 0b00000000;
             leds[4] = SEVEN_SEGMENT_DIGITS[digits[2]] | SEVEN_SEGMENT_DP;
             leds[3] = SEVEN_SEGMENT_DIGITS[digits[1]];
