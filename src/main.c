@@ -1,8 +1,8 @@
 #include "hdc2080.h"
 #include "leds.h"
 #include "brightness_control.h"
+#include "f_cpu.h"
 
-#define F_CPU 8000000UL
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/power.h>
