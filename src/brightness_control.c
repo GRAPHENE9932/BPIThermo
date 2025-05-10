@@ -48,5 +48,11 @@ fixed16 brightness_control_get_percentage(void) {
     // The buttons are modifying perceived buttons, but the real brightness needs to be calculated.
     // Using a bold approximation, Y(L*) = 0,01 * L*^2, where Y is luminance and L* is lightness.
     const fixed16 tmp = fixed16_mul(FIXED16_0_1, perceived_brightness);
-    return fixed16_mul(tmp, tmp);
+    fixed16 result = fixed16_mul(tmp, tmp);
+
+    if (result > FIXED16_100) {
+        result = FIXED16_100;
+    }
+
+    return result;
 }
