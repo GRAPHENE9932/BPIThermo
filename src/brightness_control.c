@@ -10,7 +10,8 @@
 
 #define FIXED16_100 0x6400 // 100.0
 #define FIXED16_10_256 0x000A // 10/256 = 0.0390625
-#define FIXED16_0_1 0x001A // 0.1 (actually 0.1015625)
+#define FIXED16_0_1 0x0019 // 0.1 (actually 0.09765625)
+#define FIXED16_0_01 0x0003 // 0.01 (actually 0.01171875)
 
 static fixed16 perceived_brightness = FIXED16_100;
 static bool changed = false;
@@ -46,9 +47,13 @@ bool brightness_control_changed(void) {
 
 fixed16 brightness_control_get_percentage(void) {
     // The buttons are modifying perceived buttons, but the real brightness needs to be calculated.
-    // Using a bold approximation, Y(L*) = 0,01 * L*^2, where Y is luminance and L* is lightness.
-    const fixed16 tmp = fixed16_mul(FIXED16_0_1, perceived_brightness);
-    fixed16 result = fixed16_mul(tmp, tmp);
+    // Using a bold approximation, Y(L*) = 0.0001 * L*^3, where Y is luminance and L* is lightness.
+    // Adapting this equation to the limited fixed16 range we get:
+    // Y(L*) = 0.01L* * 0.01L* * 0.1L*
+    fixed16 result = fixed16_mul(FIXED16_0_1, perceived_brightness);
+    result = fixed16_mul(result, result);
+    fixed16 tmp = fixed16_mul(FIXED16_0_01, perceived_brightness);
+    result = fixed16_mul(result, tmp);
 
     if (result > FIXED16_100) {
         result = FIXED16_100;
