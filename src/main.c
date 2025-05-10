@@ -25,23 +25,25 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 #define SEVEN_SEGMENT_DP 0b10000000
 #define SEVEN_SEGMENT_H 0b01110110
 #define SEVEN_SEGMENT_I 0b00000110
+#define SEVEN_SEGMENT_b 0b01111100
+#define SEVEN_SEGMENT_r 0b01010000
 
-static void put_temperature_on_leds(fixed16 temperature) {
+static void put_number_on_red_leds(fixed16 number) {
     bool is_negative = false;
-    if (temperature < 0) {
-        temperature = -temperature;
+    if (number < 0) {
+        number = -number;
         is_negative = true;
     }
 
     uint8_t digits[5]; // [4] [3] [2].[1] [0]
 
-    uint8_t integer_part = temperature >> 8;
+    uint8_t integer_part = number >> 8;
 
     digits[4] = integer_part / 100;
     digits[3] = integer_part / 10 - digits[4] * 100;
     digits[2] = integer_part % 10;
 
-    uint8_t fractional_part = temperature;
+    uint8_t fractional_part = number;
 
     digits[1] = ((uint16_t)fractional_part * 10) >> 8;
     digits[0] = (((uint16_t)fractional_part * 100) >> 8) - digits[1] * 10;
@@ -51,17 +53,20 @@ static void put_temperature_on_leds(fixed16 temperature) {
     if (is_negative) {
         leds[5] = SEVEN_SEGMENT_MINUS;
 
-        // In the negative range we assume that digit[4] is always 0,
-        // because neither in Celsius or Fahrenheit the temperature can be lower than -40.
         if (digits[3] == 0) {
             leds[4] = SEVEN_SEGMENT_DIGITS[digits[2]] | SEVEN_SEGMENT_DP;
             leds[3] = SEVEN_SEGMENT_DIGITS[digits[1]];
             leds[2] = SEVEN_SEGMENT_DIGITS[digits[0]];
         }
-        else {
+        else if (digits[4] == 0) {
             leds[4] = SEVEN_SEGMENT_DIGITS[digits[3]];
             leds[3] = SEVEN_SEGMENT_DIGITS[digits[2]] | SEVEN_SEGMENT_DP;
             leds[2] = SEVEN_SEGMENT_DIGITS[digits[1]];
+        }
+        else {
+            leds[4] = SEVEN_SEGMENT_DIGITS[digits[4]];
+            leds[3] = SEVEN_SEGMENT_DIGITS[digits[3]];
+            leds[2] = SEVEN_SEGMENT_DIGITS[digits[2]] | SEVEN_SEGMENT_DP;
         }
     }
     else {
@@ -86,6 +91,10 @@ static void put_temperature_on_leds(fixed16 temperature) {
     }
 }
 
+static void put_temperature_on_leds(fixed16 temperature) {
+    put_number_on_red_leds(temperature);
+}
+
 static void put_humidity_on_leds(uint8_t humidity) {
     // We only have two seven segment digits for our disposal.
     // So, when humidity is 100, display "HI".
@@ -97,6 +106,13 @@ static void put_humidity_on_leds(uint8_t humidity) {
 
     leds[1] = SEVEN_SEGMENT_DIGITS[humidity / 10];
     leds[0] = SEVEN_SEGMENT_DIGITS[humidity % 10];
+}
+
+static void put_brightness_on_leds(fixed16 brightness) {
+    leds[1] = SEVEN_SEGMENT_b;
+    leds[0] = SEVEN_SEGMENT_r;
+
+    put_number_on_red_leds(brightness);
 }
 
 int main(void) {
@@ -118,6 +134,7 @@ int main(void) {
         brightness_control_update();
         if (brightness_control_changed()) {
             cached_brightness = brightness_control_get_percentage();
+            put_brightness_on_leds(cached_brightness);
         }
     }
 
