@@ -1,7 +1,7 @@
 #ifndef LEDS_H
 #define LEDS_H
 
-#include "fixed16.h"
+#include "../fixed16.h"
 
 #include <stdint.h>
 

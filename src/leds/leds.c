@@ -1,26 +1,21 @@
 #include "leds.h"
-#include "var_delay.h"
-#include "f_cpu.h"
+#include "shared_defines.h"
+#include "../f_cpu.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
 
-// Define pins for the TLC6C598 shift register's inputs.
-#define PORT_SER_IN_SRCK PORTB
-#define DDR_SER_IN_SRCK DDRB
-#define BIT_SER_IN 0
-#define BIT_SRCK 1
-#define PORT_RCK_CLR_G PORTD
-#define DDR_RCK_CLR_G DDRD
-#define BIT_RCK 7
-#define BIT_CLR 6
-#define BIT_G 5
+#define PORT_SER_IN_SRCK _SFR_IO8(PORT_ADDR_SER_IN_SRCK)
+#define DDR_SER_IN_SRCK _SFR_IO8(DDR_ADDR_SER_IN_SRCK)
+#define PORT_RCK_CLR_G _SFR_IO8(PORT_ADDR_RCK_CLR_G)
+#define DDR_RCK_CLR_G _SFR_IO8(DDR_ADDR_RCK_CLR_G)
 
 // Define the duration of a half of a clock cycle for shift register control in microseconds.
 // 5 us corresponds to 100 kHz.
 #define HALF_CYCLE_US 5
-// Define the max duration of the LED's being on.
-#define LED_DUTY_US 100
+
+void leds_large_pwm_cycle(uint8_t us);
+void leds_small_pwm_cycle(uint8_t cycles);
 
 uint8_t leds[6];
 
@@ -71,63 +66,29 @@ void leds_init(void) {
     PORT_RCK_CLR_G |= (1 << BIT_CLR);
 }
 
-#define FIXED16_2 0x0200
+#define FIXED16_1 0x0100
 
-static void flash_for_us(fixed16 us) {
-    // The variable_delay_for_us can delay for integer amount of microseconds in range [2us, 255us].
-    if (us >= FIXED16_2) {
+static void flash_for_fixed16_us(fixed16 us) {
+    // The leds_flash_for_us can delay for integer amount of microseconds in range [1us, 255us].
+    if (us >= FIXED16_1) {
         uint8_t us_int = us >> 8;
 
         // Brightness checks for safety. Impulse too wide can burn the LEDs.
         if (us_int > LED_DUTY_US) {
             us_int = LED_DUTY_US;
         }
-        else if (us_int < 2) {
-            us_int = 2;
+        else if (us_int == 0) {
+            us_int = 1;
         }
 
-        PORT_RCK_CLR_G &= ~(1 << BIT_G);
-        variable_delay_for_us(us_int);
-        PORT_RCK_CLR_G |= (1 << BIT_G);
+        leds_large_pwm_cycle(us_int);
 
         us -= us_int << 8; // Remove the time we waited.
     }
 
-    // Now we potentially have 15 additional cycles to shine.
+    // Now we potentially have 7 additional cycles to shine.
     uint8_t cycles_left = us >> 5;
-    if (cycles_left & 0b00001000) {
-        PORT_RCK_CLR_G &= ~(1 << BIT_G);
-        __asm__ volatile (
-            "nop\n\t"
-            "nop\n\t"
-            "nop\n\t"
-            "nop\n\t"
-            "nop\n\t"
-            "nop\n\t"
-            "nop\n\t"
-        );
-        PORT_RCK_CLR_G |= (1 << BIT_G);
-    }
-    if (cycles_left & 0b00000100) {
-        PORT_RCK_CLR_G &= ~(1 << BIT_G);
-        __asm__ volatile (
-            "nop\n\t"
-            "nop\n\t"
-            "nop\n\t"
-        );
-        PORT_RCK_CLR_G |= (1 << BIT_G);
-    }
-    if (cycles_left & 0b00000010) {
-        PORT_RCK_CLR_G &= ~(1 << BIT_G);
-        __asm__ volatile (
-            "nop\n\t"
-        );
-        PORT_RCK_CLR_G |= (1 << BIT_G);
-    }
-    if (cycles_left & 0b00000001) {
-        PORT_RCK_CLR_G &= ~(1 << BIT_G);
-        PORT_RCK_CLR_G |= (1 << BIT_G);
-    }
+    leds_small_pwm_cycle(cycles_left);
 }
 
 #define FIXED16_LED_DUTY_US ((fixed16)LED_DUTY_US << 8)
@@ -157,7 +118,7 @@ void leds_flash_once(fixed16 brightness) {
             break;
         }
 
-        flash_for_us(brightness);
+        flash_for_fixed16_us(brightness);
 
         switch (i) {
         case 0:
@@ -178,12 +139,6 @@ void leds_flash_once(fixed16 brightness) {
         case 5:
             PORTA |= (1 << PA2);
             break;
-        }
-
-        // Now we do the dark portion of PWM.
-        uint8_t us_to_delay = (FIXED16_LED_DUTY_US - brightness) >> 8;
-        if (us_to_delay >= 2) {
-            variable_delay_for_us(us_to_delay);
         }
     }
 }

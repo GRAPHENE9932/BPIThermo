@@ -1,5 +1,5 @@
 #include "hdc2080.h"
-#include "leds.h"
+#include "leds/leds.h"
 #include "brightness_control.h"
 #include "f_cpu.h"
 
