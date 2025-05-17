@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define FIXED16_CLAMP(x, lo, hi) ((x) < (lo) ? (lo) : ((x) > (hi) ? (hi) : (x)))
+#define CLAMP(x, lo, hi) ((x) < (lo) ? (lo) : ((x) > (hi) ? (hi) : (x)))
 
 typedef int16_t fixed16;
 typedef uint16_t ufixed16;

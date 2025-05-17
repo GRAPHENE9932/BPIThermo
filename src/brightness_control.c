@@ -44,7 +44,7 @@ void brightness_control_update(void) {
     // ~97 and not 100 is used as a maximum value because of poor precision of 16-bit fixed
     // point numbers. If we use 100 for the formula in brightness_control_get_percentage
     // we get more than 106 as a result, so I've adjusted the limits a little.
-    perceived_brightness = FIXED16_CLAMP(perceived_brightness, FIXED16_0_25, FIXED16_97_082);
+    perceived_brightness = CLAMP(perceived_brightness, FIXED16_0_25, FIXED16_97_082);
 }
 
 bool brightness_control_changed(void) {
