@@ -28,6 +28,8 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 #define SEVEN_SEGMENT_b 0b01111100
 #define SEVEN_SEGMENT_r 0b01010000
 
+static fixed16 cur_brightness;
+
 static void put_number_on_red_leds(fixed16 number) {
     bool is_negative = false;
     if (number < 0) {
@@ -115,26 +117,37 @@ static void put_brightness_on_leds(fixed16 brightness) {
     put_number_on_red_leds(brightness);
 }
 
+// The tick is supposed to be issued very roughly 60 times a second.
+#define TICK_PERIOD 24
+static void tick(void) {
+    if (hdc2080_is_measurement_over()) {
+        struct hdc2080_data data = hdc2080_acquire_data();
+        put_temperature_on_leds(data.temperature);
+        put_humidity_on_leds(data.humidity);
+    }
+
+    brightness_control_update();
+    if (brightness_control_changed()) {
+        cur_brightness = brightness_control_get_percentage();
+        put_brightness_on_leds(cur_brightness);
+    }
+}
+
 int main(void) {
     clock_prescale_set(clock_div_1); // Disable the default /8 prescaler.
 
     leds_init();
     hdc2080_init();
     brightness_control_init();
-    fixed16 cached_brightness = brightness_control_get_percentage();
+    cur_brightness = brightness_control_get_percentage();
 
+    uint8_t frame_counter = 0;
     while (1) {
-        leds_flash_once(cached_brightness);
-        if (hdc2080_is_measurement_over()) {
-            struct hdc2080_data data = hdc2080_acquire_data();
-            put_temperature_on_leds(data.temperature);
-            put_humidity_on_leds(data.humidity);
-        }
-
-        brightness_control_update();
-        if (brightness_control_changed()) {
-            cached_brightness = brightness_control_get_percentage();
-            put_brightness_on_leds(cached_brightness);
+        leds_flash_once(cur_brightness);
+        
+        if (++frame_counter >= TICK_PERIOD) {
+            tick();
+            frame_counter = 0;
         }
     }
 }
