@@ -69,22 +69,15 @@ void leds_init(void) {
 #define FIXED16_1 0x0100
 
 static void flash_for_fixed16_us(fixed16 us) {
-    // The leds_flash_for_us can delay for integer amount of microseconds in range [1us, 255us].
-    if (us >= FIXED16_1) {
-        uint8_t us_int = us >> 8;
-
-        // Brightness checks for safety. Impulse too wide can burn the LEDs.
-        if (us_int > LED_DUTY_US) {
-            us_int = LED_DUTY_US;
-        }
-        else if (us_int == 0) {
-            us_int = 1;
-        }
-
-        leds_large_pwm_cycle(us_int);
-
-        us -= us_int << 8; // Remove the time we waited.
+    uint8_t us_int = us >> 8;
+    // Range check for safety. Impulse too wide can burn the LEDs.
+    if (us_int > LED_DUTY_US) {
+        us_int = LED_DUTY_US;
     }
+
+    leds_large_pwm_cycle(us_int);
+
+    us -= us_int << 8; // Remove the time we waited.
 
     // Now we potentially have 7 additional cycles to shine.
     uint8_t cycles_left = us >> 5;

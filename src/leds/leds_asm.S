@@ -6,13 +6,15 @@
 #endif
 
 ; Takes one argument: uint8_t us.
-; <us> MUST be in range [1; 255].
+; <us> MUST be in range [0; 255].
 ; Pulls the <PORT_ADDR_RCK_CLR_G>'s <BIT_G> pin low for <us> microseconds, sets it high
 ; and waits for <LED_DUTY_US> - <us> microseconds.
 .global leds_large_pwm_cycle
 leds_large_pwm_cycle:
     ; The only argument is passed in the R24. Save it also in R25 for later use.
     mov R25, R24
+    tst R25         ; Skip the HIGH period if the argument is zero.
+    breq leds_large_pwm_cycle_low_period
     cli             ; Disable all the interrupts.
     cbi PORT_ADDR_RCK_CLR_G, BIT_G ; Set LOW to the G pin, activating the LEDs.
 leds_large_pwm_cycle_loop_1:
@@ -25,6 +27,7 @@ leds_large_pwm_cycle_loop_1:
     brne leds_large_pwm_cycle_loop_1 ; Jumps if the Z flag is not set. 1+1 cycles.
     sbi PORT_ADDR_RCK_CLR_G, BIT_G ; Set HIGH to the G pin, disabling the LEDs.
     sei             ; We won't enable the LEDs anymore, so we can enable interrupts.
+leds_large_pwm_cycle_low_period:
     ldi R26, LED_DUTY_US ; Subtract <us> from <LED_DUTY_US> and use the result for countdown.
     sub R26, R25
     breq leds_large_pwm_cycle_end ; Jumps if <LED_DUTY_US> == <us>.
