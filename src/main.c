@@ -117,20 +117,25 @@ static void put_brightness_on_leds(fixed16 brightness) {
     put_number_on_red_leds(brightness);
 }
 
+static uint8_t misc_content_display_time = 0;
+
 // The tick is supposed to be issued very roughly 60 times a second.
 #define TICK_PERIOD 24
 static void tick(void) {
-    if (hdc2080_is_measurement_over()) {
+    brightness_control_update();
+    if (brightness_control_changed()) {
+        cur_brightness = brightness_control_get_percentage();
+        put_brightness_on_leds(cur_brightness);
+        misc_content_display_time = 30;
+    }
+
+    if (misc_content_display_time == 0 && hdc2080_is_measurement_over()) {
         struct hdc2080_data data = hdc2080_acquire_data();
         put_temperature_on_leds(data.temperature);
         put_humidity_on_leds(data.humidity);
     }
 
-    brightness_control_update();
-    if (brightness_control_changed()) {
-        cur_brightness = brightness_control_get_percentage();
-        put_brightness_on_leds(cur_brightness);
-    }
+    misc_content_display_time = misc_content_display_time ? misc_content_display_time - 1 : 0;
 }
 
 int main(void) {
