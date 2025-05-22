@@ -66,8 +66,6 @@ void leds_init(void) {
     PORT_RCK_CLR_G |= (1 << BIT_CLR);
 }
 
-#define FIXED16_1 0x0100
-
 static void flash_for_fixed16_us(fixed16 us) {
     uint8_t us_int = us >> 8;
     // Range check for safety. Impulse too wide can burn the LEDs.
