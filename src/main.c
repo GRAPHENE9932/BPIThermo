@@ -4,6 +4,7 @@
 #include "f_cpu.h"
 #include "bat_mon.h"
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/power.h>
@@ -164,6 +165,7 @@ static void put_batt_lo_on_leds(void) {
 static void power_off(void) {
     leds_power_off();
     hdc2080_power_off();
+    cli();
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
     sleep_cpu();
