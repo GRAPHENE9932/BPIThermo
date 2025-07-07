@@ -24,7 +24,7 @@ void bat_mon_init(void) {
 }
 
 enum bat_state bat_get_state(void) {
-    if (bat_mon_voltage > BAT_MON_VOLTAGE_LOW)
+    if (bat_mon_voltage > BAT_MON_VOLTAGE_LOW || bat_mon_voltage == BAT_MON_VOLTAGE_UNKNOWN)
         return BAT_NORMAL;
     else if (bat_mon_voltage > BAT_MON_VOLTAGE_CRITICAL)
         return BAT_LOW;
