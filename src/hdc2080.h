@@ -15,5 +15,6 @@ struct hdc2080_data {
 void hdc2080_init(void);
 bool hdc2080_is_measurement_over(void);
 struct hdc2080_data hdc2080_acquire_data(void);
+void hdc2080_power_off(void);
 
 #endif // HDC2080_H

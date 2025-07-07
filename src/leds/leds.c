@@ -84,6 +84,7 @@ static void flash_for_fixed16_us(fixed16 us) {
 
 #define FIXED16_LED_DUTY_US ((fixed16)LED_DUTY_US << 8)
 
+// TODO: Implement this function properly.
 void leds_flash_once(fixed16 brightness) {
     for (uint8_t i = 0; i < 6; i++) {
         send_byte_to_shift_register(leds[i]);
@@ -132,4 +133,9 @@ void leds_flash_once(fixed16 brightness) {
             break;
         }
     }
+}
+
+void leds_power_off(void) {
+    PORTD |= (1 << PD0) | (1 << PD1) | (1 << PD2) | (1 << PD3) | (1 << PD4);
+    PORTA |= (1 << PA2);
 }

@@ -7,6 +7,8 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/power.h>
+#include <avr/sleep.h>
+
 #include <stdbool.h>
 
 static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
@@ -34,6 +36,10 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 #define SEVEN_SEGMENT_o 0b01011100
 #define SEVEN_SEGMENT_C 0b00111001
 
+// Power off will be initiated after BAT_CRIT_TICKS_THRESHOLD ticks under
+// critical battery voltage.
+#define BAT_CRIT_TICKS_THRESHOLD 60
+
 enum content : uint8_t {
     CONT_TEMP_AND_HUM = 0,
     CONT_BRIGHTNESS = 1,
@@ -48,6 +54,7 @@ struct display_state {
 };
 
 static fixed16 cur_brightness;
+static uint8_t bat_crit_ticks;
 
 static void put_number_on_red_leds(fixed16 number) {
     bool is_negative = false;
@@ -154,6 +161,14 @@ static void put_batt_lo_on_leds(void) {
     leds[0] = SEVEN_SEGMENT_o;
 }
 
+static void power_off(void) {
+    leds_power_off();
+    hdc2080_power_off();
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+    sleep_cpu();
+}
+
 static bool display_state_eq(struct display_state* ds_1, struct display_state* ds_2) {
     if (ds_1->content != ds_2->content)
         return false;
@@ -174,42 +189,23 @@ static bool display_state_eq(struct display_state* ds_1, struct display_state* d
     return result;
 }
 
-static void display_tick(struct display_state* ds) {
-    static struct display_state prev_ds;
-
-    if (display_state_eq(ds, &prev_ds)) {
-        return;
-    }
-
-    switch (ds->content) {
-    case CONT_TEMP_AND_HUM:
-        put_temperature_on_leds(ds->red_number);
-        put_humidity_on_leds(ds->blue_number);
-        break;
-    case CONT_BRIGHTNESS:
-        put_brightness_on_leds(ds->red_number);
-        break;
-    case CONT_BATT_CR_MSG:
-        put_batt_cr_on_leds();
-        break;
-    case CONT_BATT_LO_MSG:
-        put_batt_lo_on_leds();
-        break;
-    }
-}
-
-static void compute_display_state(struct display_state* ds, uint16_t tick_count) {
+static void control_tick(struct display_state* ds, uint16_t tick_count) {
     switch (bat_get_state()) {
     case BAT_CRIT:
         ds->content = CONT_BATT_CR_MSG;
+        if (++bat_crit_ticks >= BAT_CRIT_TICKS_THRESHOLD)
+            power_off();
         return;
     case BAT_LOW:
+        bat_crit_ticks = 0;
         // Show the battery low message every ~4 seconds for ~0,5s.
         if (tick_count % 256 < 32) {
             ds->content = CONT_BATT_LO_MSG;
             return;
         }
+        break;
     default:
+        bat_crit_ticks = 0;
         break;
     }
 
@@ -236,6 +232,30 @@ static void compute_display_state(struct display_state* ds, uint16_t tick_count)
     ds->blue_number = data.humidity;
 }
 
+static void display_tick(struct display_state* ds) {
+    static struct display_state prev_ds;
+
+    if (display_state_eq(ds, &prev_ds)) {
+        return;
+    }
+
+    switch (ds->content) {
+    case CONT_TEMP_AND_HUM:
+        put_temperature_on_leds(ds->red_number);
+        put_humidity_on_leds(ds->blue_number);
+        break;
+    case CONT_BRIGHTNESS:
+        put_brightness_on_leds(ds->red_number);
+        break;
+    case CONT_BATT_CR_MSG:
+        put_batt_cr_on_leds();
+        break;
+    case CONT_BATT_LO_MSG:
+        put_batt_lo_on_leds();
+        break;
+    }
+}
+
 // The tick is supposed to be issued very roughly 60 times a second.
 #define TICK_PERIOD 24
 static void tick(void) {
@@ -243,7 +263,7 @@ static void tick(void) {
     tick_count++;
 
     struct display_state ds;
-    compute_display_state(&ds, tick_count);
+    control_tick(&ds, tick_count);
     display_tick(&ds);
 }
 

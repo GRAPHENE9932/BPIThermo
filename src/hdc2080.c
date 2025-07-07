@@ -198,3 +198,10 @@ struct hdc2080_data hdc2080_acquire_data(void) {
 
     return result;
 }
+
+void hdc2080_power_off(void) {
+    i2c_mt_start(HDC2080_I2C_ADDRESS_W);
+    i2c_mt(0x0E); // Select the Reset and DRDY/INT Configuration register.
+    i2c_mt(0b00000110); // Disable the Auto Measurement Mode.
+    i2c_mt_stop();
+}

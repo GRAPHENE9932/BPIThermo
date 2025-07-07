@@ -18,5 +18,6 @@ extern uint8_t leds[6];
 void leds_init(void);
 // Brightness must be in range [1/256, 100.0].
 void leds_flash_once(fixed16 brightness);
+void leds_power_off(void);
 
 #endif // LEDS_H
