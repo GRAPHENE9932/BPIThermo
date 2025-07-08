@@ -33,6 +33,9 @@ enum bat_state bat_get_state(void) {
 }
 
 ISR(ADC_vect) {
+    // Clear the Timer/Counter1 Overflow Flag, so the overflow can be triggered again.
+    TIFR1 |= (1 << TOV1);
+
     uint8_t low = ADCL;
     uint8_t high = ADCH;
     bat_mon_voltage = low | ((uint16_t)high << 8);
