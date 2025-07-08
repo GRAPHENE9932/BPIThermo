@@ -8,7 +8,7 @@ volatile uint16_t bat_mon_voltage = 0;
 void bat_mon_init(void) {
     bat_mon_voltage = BAT_MON_VOLTAGE_UNKNOWN;
 
-    // Here we initialize the Timer/Counter1 to be triggering the ADC every ~1 second.
+    // Here we initialize the Timer/Counter1 to be triggering the ADC every ~half a second.
     // Disable the Output Compare pins and use the normal mode of operation.
     TCCR1A = 0;
     // Do not enable the input capture noise canceler and set the /64 prescaler.
