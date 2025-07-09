@@ -7,7 +7,7 @@ PROGRAMMER_PORT := /dev/ttyACM0
 CC := avr-gcc
 OBJCOPY_PROG := avr-objcopy
 
-OBJECTS := $(BUILD_DIR)/main.o $(BUILD_DIR)/fixed16.o $(BUILD_DIR)/hdc2080.o $(BUILD_DIR)/leds/leds.o $(BUILD_DIR)/leds/leds_asm.o $(BUILD_DIR)/brightness_control.o $(BUILD_DIR)/bat_mon.o
+OBJECTS := $(BUILD_DIR)/main.o $(BUILD_DIR)/fixed16.o $(BUILD_DIR)/hdc2080.o $(BUILD_DIR)/leds/leds.o $(BUILD_DIR)/leds/leds_asm.o $(BUILD_DIR)/brightness_control.o $(BUILD_DIR)/bat_mon.o $(BUILD_DIR)/eeprom.o
 
 all: $(BUILD_DIR)/$(PROGRAM_NAME).bin
 

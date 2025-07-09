@@ -40,6 +40,9 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 // Power off will be initiated after BAT_CRIT_TICKS_THRESHOLD ticks under
 // critical battery voltage.
 #define BAT_CRIT_TICKS_THRESHOLD 60
+// Brightness value will be saved to EEPROM after this many ticks after the last
+// brightness change.
+#define SAVE_BR_AFTER_TICKS_OF_INACTIVITY 60
 
 enum content : uint8_t {
     CONT_TEMP_AND_HUM = 0,
@@ -211,18 +214,29 @@ static void control_tick(struct display_state* ds, uint16_t tick_count) {
         break;
     }
 
-    static uint8_t brightness_disp_time = 0;
+    static uint8_t br_disp_time = 0;
+    static int8_t br_time_until_save = -1;
     brightness_control_update();
     if (brightness_control_changed()) {
-        brightness_disp_time = 30;
+        br_disp_time = 30;
+        br_time_until_save = SAVE_BR_AFTER_TICKS_OF_INACTIVITY;
     }
-    if (brightness_disp_time > 0) {
+
+    if (br_disp_time > 0) {
         fixed16 br = brightness_control_get_percentage();
         ds->content = CONT_BRIGHTNESS;
         ds->red_number = br;
         cur_brightness = br;
-        brightness_disp_time--;
+        br_disp_time--;
         return;
+    }
+
+    if (br_time_until_save > 0) {
+        br_time_until_save--;
+    }
+    else if (br_time_until_save == 0) {
+        br_time_until_save = -1;
+        brightness_control_save_to_eeprom();
     }
 
     static struct hdc2080_data data;
