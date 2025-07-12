@@ -59,10 +59,10 @@ void brightness_control_update(void) {
     }
     
     if (br_down_pressed) {
-        perceived_brightness -= FIXED16_0_25;
+        perceived_brightness -= FIXED16_0_25 * 2;
     }
     if (br_up_pressed) {
-        perceived_brightness += FIXED16_0_25;
+        perceived_brightness += FIXED16_0_25 * 2;
     }
 
     // ~97 and not 100 is used as a maximum value because of poor precision of 16-bit fixed
