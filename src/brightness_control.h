@@ -1,7 +1,7 @@
 #ifndef BRIGHTNESS_CONTROL_H
 #define BRIGHTNESS_CONTROL_H
 
-#include "fixed16.h"
+#include "fixed_point.h"
 
 #include <stdbool.h>
 

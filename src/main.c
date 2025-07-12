@@ -3,6 +3,7 @@
 #include "brightness_control.h"
 #include "f_cpu.h"
 #include "bat_mon.h"
+#include "mode_switch.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -36,6 +37,8 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 #define SEVEN_SEGMENT_L 0b00111000
 #define SEVEN_SEGMENT_o 0b01011100
 #define SEVEN_SEGMENT_C 0b00111001
+#define SEVEN_SEGMENT_F 0b01110001
+#define SEVEN_SEGMENT_DEG 0b01100011
 
 // Power off will be initiated after BAT_CRIT_TICKS_THRESHOLD ticks under
 // critical battery voltage.
@@ -43,12 +46,16 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 // Brightness value will be saved to EEPROM after this many ticks after the last
 // brightness change.
 #define SAVE_BR_AFTER_TICKS_OF_INACTIVITY 60
+// For how long the mode switch message will be shown (in ticks).
+#define MODE_DISP_TIME 20
 
 enum content : uint8_t {
     CONT_TEMP_AND_HUM = 0,
     CONT_BRIGHTNESS = 1,
     CONT_BATT_LO_MSG = 2,
     CONT_BATT_CR_MSG = 3,
+    CONT_MODE_CELSIUS = 4,
+    CONT_MODE_FAHREN = 5,
 };
 
 struct display_state {
@@ -59,6 +66,8 @@ struct display_state {
 
 static fixed16 cur_brightness;
 static uint8_t bat_crit_ticks;
+static uint8_t mode_disp_time = 0;
+static enum mode last_mode = MODE_CELSIUS;
 
 static void put_number_on_red_leds(fixed16 number) {
     bool is_negative = false;
@@ -165,6 +174,24 @@ static void put_batt_lo_on_leds(void) {
     leds[0] = SEVEN_SEGMENT_o;
 }
 
+static void put_c_deg_on_leds(void) {
+    leds[5] = 0;
+    leds[4] = SEVEN_SEGMENT_C;
+    leds[3] = SEVEN_SEGMENT_DEG;
+    leds[2] = 0;
+    leds[1] = 0;
+    leds[0] = 0;
+}
+
+static void put_f_deg_on_leds(void) {
+    leds[5] = 0;
+    leds[4] = SEVEN_SEGMENT_F;
+    leds[3] = SEVEN_SEGMENT_DEG;
+    leds[2] = 0;
+    leds[1] = 0;
+    leds[0] = 0;
+}
+
 static void power_off(void) {
     leds_power_off();
     hdc2080_power_off();
@@ -188,6 +215,8 @@ static bool display_state_eq(struct display_state* ds_1, struct display_state* d
         [[fallthrough]];
     case CONT_BATT_LO_MSG:
     case CONT_BATT_CR_MSG:
+    case CONT_MODE_CELSIUS:
+    case CONT_MODE_FAHREN:
         break;
     }
 
@@ -212,6 +241,25 @@ static void control_tick(struct display_state* ds, uint16_t tick_count) {
     default:
         bat_crit_ticks = 0;
         break;
+    }
+
+    enum mode cur_mode = mode_switch_state();
+    if (cur_mode != last_mode) {
+        mode_disp_time = MODE_DISP_TIME;
+        last_mode = cur_mode;
+    }
+
+    if (mode_disp_time > 0) {
+        switch (cur_mode) {
+        case MODE_CELSIUS:
+            ds->content = CONT_MODE_CELSIUS;
+            break;
+        case MODE_FAHRENHEIT:
+            ds->content = CONT_MODE_FAHREN;
+            break;
+        }
+        mode_disp_time--;
+        return;
     }
 
     static uint8_t br_disp_time = 0;
@@ -241,7 +289,7 @@ static void control_tick(struct display_state* ds, uint16_t tick_count) {
 
     static struct hdc2080_data data;
     if (hdc2080_is_measurement_over())
-        data = hdc2080_acquire_data();
+        data = hdc2080_acquire_data(cur_mode);
 
     ds->content = CONT_TEMP_AND_HUM;
     ds->red_number = data.temperature;
@@ -269,6 +317,12 @@ static void display_tick(struct display_state* ds) {
     case CONT_BATT_LO_MSG:
         put_batt_lo_on_leds();
         break;
+    case CONT_MODE_CELSIUS:
+        put_c_deg_on_leds();
+        break;
+    case CONT_MODE_FAHREN:
+        put_f_deg_on_leds();
+        break;
     }
 }
 
@@ -287,10 +341,12 @@ int main(void) {
     clock_prescale_set(clock_div_1); // Disable the default /8 prescaler.
 
     bat_mon_init();
+    mode_switch_init();
     leds_init();
     hdc2080_init();
     brightness_control_init();
     cur_brightness = brightness_control_get_percentage();
+    last_mode = mode_switch_state();
 
     uint8_t frame_counter = 0;
     while (1) {

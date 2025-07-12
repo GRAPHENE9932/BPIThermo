@@ -157,20 +157,25 @@ bool hdc2080_is_measurement_over(void) {
     return PIN_DRDY & (1 << BIT_DRDY);
 }
 
-#define UFIXED16_165_BY_256 ((ufixed16)165) // Exactly 165/256, or 0.64453125.
-#define UFIXED16_40_596 0x2899 // Supposed to be 40.596, actually 40.59765625.
+#define FIXED_165_BY_256 165 // Exactly 165/256, or 0.64453125.
+#define FIXED_297_BY_256 297 // Exactly 297/256, or 1.16015625.
+#define FIXED_40_596 0x2899 // Supposed to be 40.596, actually 40.59765625.
+#define FIXED_41_0728 0x2914 // Supposed to be 41.0728, actually 41.078125.
 
-static fixed16 convert_raw_to_celsius(ufixed16 raw) {
+static fixed16 convert_raw_to_celsius(fixed16_8 raw) {
     // Formula from the datasheet is:
     // Temperature (C) = (TEMPERATURE[15:0] / 2^16) * 165 - (40.5 + TEMP_PSRR * (V_DD - 1.8 V))
     // According to the datasheet, TEMP_PSRR = 0.08 C/V and the input voltage of the HDC2080, in
     // case with BPIThermo Revision A, is 3.0V.
     // Substituting and simplifying, we get:
     // Temperature (C) = (TEMPERATURE[15:0] / 2^8) * (165 / 2^8) - 40.596.
+    return fixed16_8_mul(raw, FIXED_165_BY_256) - FIXED_40_596;
+}
 
-    // We must use unsigned values here, as the raw temperature can range from 0.0 to about 255.99609375,
-    // which exceeds the fixed16 range.
-    return ufixed16_mul(raw, UFIXED16_165_BY_256) - UFIXED16_40_596;
+static fixed16 convert_raw_to_fahrenheit(fixed16_8 raw) {
+    // Here we apply the celsius-to-fahrenheit conversion formula to the formula
+    // from the convert_raw_to_celsius function.
+    return fixed16_8_mul(raw, FIXED_297_BY_256) - FIXED_41_0728;
 }
 
 static uint8_t convert_raw_to_rh_percentage(uint16_t raw) {
@@ -179,7 +184,7 @@ static uint8_t convert_raw_to_rh_percentage(uint16_t raw) {
     return (((uint32_t)raw + 328) * 100) >> 16;
 }
 
-struct hdc2080_data hdc2080_acquire_data(void) {
+struct hdc2080_data hdc2080_acquire_data(enum mode mode) {
     i2c_mt_start(HDC2080_I2C_ADDRESS_W);
     i2c_mt(0x00); // Select the TEMPERATURE LOW register.
     i2c_mt_stop();
@@ -191,10 +196,17 @@ struct hdc2080_data hdc2080_acquire_data(void) {
     uint8_t humi_high = i2c_mr(true); // Read out HUMIDITY HIGH.
     i2c_mr_stop();
 
-    struct hdc2080_data result = {
-        convert_raw_to_celsius((ufixed16)temp_high << 8 | temp_low),
-        convert_raw_to_rh_percentage((uint16_t)humi_high << 8 | humi_low)
-    };
+    struct hdc2080_data result;
+    result.humidity = convert_raw_to_rh_percentage((uint16_t)humi_high << 8 | humi_low);
+    
+    switch (mode) {
+    case MODE_CELSIUS:
+        result.temperature = convert_raw_to_celsius((fixed16_8)temp_high << 8 | temp_low);
+        break;
+    case MODE_FAHRENHEIT:
+        result.temperature = convert_raw_to_fahrenheit((fixed16_8)temp_high << 8 | temp_low);
+        break;
+    }
 
     return result;
 }
