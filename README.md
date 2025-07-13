@@ -10,8 +10,8 @@ This is an 18650 Li-Ion battery powered device which samples relative humidity (
 seven-segment LED display.
 
 ### Features
-- Celsius and Fahrenheit modes
-- Precise brightness control
+- Celsius and Fahrenheit modes.
+- Precise brightness control with brightness being saved to EEPROM.
 - Warnings about low battery level, as well as auto shutdown under critically low voltage.
 
 ## Electronic schematic
