@@ -59,7 +59,7 @@ enum content : uint8_t {
 };
 
 struct display_state {
-    fixed16 red_number;
+    fixed16_8 red_number;
     uint8_t blue_number;
     enum content content;
 };
@@ -69,7 +69,7 @@ static uint8_t bat_crit_ticks;
 static uint8_t mode_disp_time = 0;
 static enum mode last_mode = MODE_CELSIUS;
 
-static void put_number_on_red_leds(fixed16 number) {
+static void put_number_on_red_leds(fixed16_8 number) {
     bool is_negative = false;
     if (number < 0) {
         number = -number;
@@ -132,7 +132,7 @@ static void put_number_on_red_leds(fixed16 number) {
     }
 }
 
-static void put_temperature_on_leds(fixed16 temperature) {
+static void put_temperature_on_leds(fixed16_8 temperature) {
     put_number_on_red_leds(temperature);
 }
 

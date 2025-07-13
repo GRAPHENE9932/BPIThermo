@@ -162,7 +162,7 @@ bool hdc2080_is_measurement_over(void) {
 #define FIXED_40_596 0x2899 // Supposed to be 40.596, actually 40.59765625.
 #define FIXED_41_0728 0x2914 // Supposed to be 41.0728, actually 41.078125.
 
-static fixed16 convert_raw_to_celsius(fixed16_8 raw) {
+static fixed16_8 convert_raw_to_celsius(fixed16_8 raw) {
     // Formula from the datasheet is:
     // Temperature (C) = (TEMPERATURE[15:0] / 2^16) * 165 - (40.5 + TEMP_PSRR * (V_DD - 1.8 V))
     // According to the datasheet, TEMP_PSRR = 0.08 C/V and the input voltage of the HDC2080, in
@@ -172,7 +172,7 @@ static fixed16 convert_raw_to_celsius(fixed16_8 raw) {
     return fixed16_8_mul(raw, FIXED_165_BY_256) - FIXED_40_596;
 }
 
-static fixed16 convert_raw_to_fahrenheit(fixed16_8 raw) {
+static fixed16_8 convert_raw_to_fahrenheit(fixed16_8 raw) {
     // Here we apply the celsius-to-fahrenheit conversion formula to the formula
     // from the convert_raw_to_celsius function.
     return fixed16_8_mul(raw, FIXED_297_BY_256) - FIXED_41_0728;
@@ -198,7 +198,7 @@ struct hdc2080_data hdc2080_acquire_data(enum mode mode) {
 
     struct hdc2080_data result;
     result.humidity = convert_raw_to_rh_percentage((uint16_t)humi_high << 8 | humi_low);
-    
+
     switch (mode) {
     case MODE_CELSIUS:
         result.temperature = convert_raw_to_celsius((fixed16_8)temp_high << 8 | temp_low);
