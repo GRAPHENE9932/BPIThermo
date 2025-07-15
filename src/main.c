@@ -46,6 +46,8 @@ static const uint8_t SEVEN_SEGMENT_DIGITS[10] = {
 // Brightness value will be saved to EEPROM after this many ticks after the last
 // brightness change.
 #define SAVE_BR_AFTER_TICKS_OF_INACTIVITY 60
+// For how long the brightness level will be shown (in ticks).
+#define BR_DISP_TIME 30
 // For how long the mode switch message will be shown (in ticks).
 #define MODE_DISP_TIME 20
 
@@ -266,7 +268,7 @@ static void control_tick(struct display_state* ds, uint16_t tick_count) {
     static int8_t br_time_until_save = -1;
     brightness_control_update();
     if (brightness_control_changed()) {
-        br_disp_time = 30;
+        br_disp_time = BR_DISP_TIME;
         br_time_until_save = SAVE_BR_AFTER_TICKS_OF_INACTIVITY;
     }
 
