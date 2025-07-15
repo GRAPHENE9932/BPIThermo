@@ -82,57 +82,39 @@ static void flash_for_fixed16_us(fixed16 us) {
     leds_small_pwm_cycle(cycles_left);
 }
 
-#define FIXED16_LED_DUTY_US ((fixed16)LED_DUTY_US << 8)
-
-// TODO: Implement this function properly.
 void leds_flash_once(fixed16 brightness) {
-    for (uint8_t i = 0; i < 6; i++) {
-        send_byte_to_shift_register(leds[i]);
+    // Implementing this function adequately with a loop will make the code
+    // ~100 bytes longer, and, obviously, less performant. As this is one of
+    // the performance-critical sections, we need to accept some uglyness here.
+    send_byte_to_shift_register(leds[0]);
+    PORTD &= ~(1 << PD0);
+    flash_for_fixed16_us(brightness);
+    PORTD |= (1 << PD0);
 
-        switch (i) {
-        case 0:
-            PORTD &= ~(1 << PD0);
-            break;
-        case 1:
-            PORTD &= ~(1 << PD1);
-            break;
-        case 2:
-            PORTD &= ~(1 << PD2);
-            break;
-        case 3:
-            PORTD &= ~(1 << PD3);
-            break;
-        case 4:
-            PORTD &= ~(1 << PD4);
-            break;
-        case 5:
-            PORTA &= ~(1 << PA2);
-            break;
-        }
+    send_byte_to_shift_register(leds[1]);
+    PORTD &= ~(1 << PD1);
+    flash_for_fixed16_us(brightness);
+    PORTD |= (1 << PD1);
 
-        flash_for_fixed16_us(brightness);
+    send_byte_to_shift_register(leds[2]);
+    PORTD &= ~(1 << PD2);
+    flash_for_fixed16_us(brightness);
+    PORTD |= (1 << PD2);
 
-        switch (i) {
-        case 0:
-            PORTD |= (1 << PD0);
-            break;
-        case 1:
-            PORTD |= (1 << PD1);
-            break;
-        case 2:
-            PORTD |= (1 << PD2);
-            break;
-        case 3:
-            PORTD |= (1 << PD3);
-            break;
-        case 4:
-            PORTD |= (1 << PD4);
-            break;
-        case 5:
-            PORTA |= (1 << PA2);
-            break;
-        }
-    }
+    send_byte_to_shift_register(leds[3]);
+    PORTD &= ~(1 << PD3);
+    flash_for_fixed16_us(brightness);
+    PORTD |= (1 << PD3);
+
+    send_byte_to_shift_register(leds[4]);
+    PORTD &= ~(1 << PD4);
+    flash_for_fixed16_us(brightness);
+    PORTD |= (1 << PD4);
+
+    send_byte_to_shift_register(leds[5]);
+    PORTA &= ~(1 << PA2);
+    flash_for_fixed16_us(brightness);
+    PORTA |= (1 << PA2);
 }
 
 void leds_power_off(void) {
